@@ -5,9 +5,15 @@ const apiKeyInput = document.getElementById("apiKey");
 const saveKeyBtn = document.getElementById("saveKeyBtn");
 const systemInstructionInput = document.getElementById("systemInstruction");
 const storyMemoryInput = document.getElementById("storyMemory");
+const storyTitleInput = document.getElementById("storyTitle");
 const storyBox = document.getElementById("storyBox");
 const generateBtn = document.getElementById("generateBtn");
+const retryBtn = document.getElementById("retryBtn");
+const newStoryBtn = document.getElementById("newStoryBtn");
 const statusIndicator = document.getElementById("statusIndicator");
+
+// Menyimpan teks cerita sebelum generate terakhir (dipakai oleh tombol Retry)
+let lastBaseText = null;
 
 // Load API Key dari localStorage jika ada
 window.addEventListener("DOMContentLoaded", () => {
@@ -28,28 +34,39 @@ saveKeyBtn.addEventListener("click", () => {
     }
 });
 
-// Fungsi Utama Generate Cerita
-generateBtn.addEventListener("click", async () => {
+// Atur status & tombol saat AI bekerja / selesai
+function setBusy(isBusy) {
+    generateBtn.disabled = isBusy;
+    retryBtn.disabled = isBusy;
+    newStoryBtn.disabled = isBusy;
+
+    if (isBusy) {
+        statusIndicator.textContent = "AI sedang menulis...";
+        statusIndicator.style.color = "#ff9800";
+    }
+}
+
+// Fungsi inti: kirim teks dasar ke Gemini lalu tambahkan hasilnya ke editor
+async function generateStory(baseText) {
     const apiKey = apiKeyInput.value.trim() || localStorage.getItem("gemini_api_key");
-    
+
     if (!apiKey) {
         alert("Harap masukkan dan simpan Gemini API Key terlebih dahulu di sidebar!");
         return;
     }
 
-    const currentText = storyBox.value;
-    const systemInstruction = systemInstructionInput.value;
-    const memory = storyMemoryInput.value;
-
-    if (!currentText.trim()) {
+    if (!baseText.trim()) {
         alert("Tuliskan beberapa kalimat awal cerita terlebih dahulu!");
         return;
     }
 
-    // Ubah status jadi 'Menulis...'
-    statusIndicator.textContent = "AI sedang menulis...";
-    statusIndicator.style.color = "#ff9800";
-    generateBtn.disabled = true;
+    const systemInstruction = systemInstructionInput.value;
+    const memory = storyMemoryInput.value;
+
+    // Simpan teks dasar agar bisa di-retry
+    lastBaseText = baseText;
+
+    setBusy(true);
 
     try {
         const ai = new GoogleGenAI({ apiKey: apiKey });
@@ -59,7 +76,7 @@ generateBtn.addEventListener("click", async () => {
         if (memory.trim()) {
             fullPrompt += `[Konteks & Memori Cerita]:\n${memory}\n\n`;
         }
-        fullPrompt += `[Teks Cerita Saat Ini]:\n${currentText}\n\n[Instruksi]: Lanjutkan paragraf cerita di atas secara natural, imersif, dan nyambung.`;
+        fullPrompt += `[Teks Cerita Saat Ini]:\n${baseText}\n\n[Instruksi]: Lanjutkan paragraf cerita di atas secara natural, imersif, dan nyambung.`;
 
         const response = await ai.models.generateContent({
             model: "gemini-2.5-flash",
@@ -70,10 +87,13 @@ generateBtn.addEventListener("click", async () => {
             }
         });
 
-        // Tambahkan hasil generasi ke dalam kotak teks (dengan spasi/baris baru yang rapi)
+        // Tambahkan hasil generasi ke dalam kotak teks (dengan baris baru yang rapi)
         const generatedText = response.text;
-        storyBox.value = currentText + (currentText.endsWith("\n") ? "" : "\n") + generatedText;
-        
+        storyBox.value = baseText + (baseText.endsWith("\n") ? "" : "\n") + generatedText;
+
+        // Scroll otomatis ke bagian paling bawah
+        storyBox.scrollTop = storyBox.scrollHeight;
+
         statusIndicator.textContent = "Siap";
         statusIndicator.style.color = "#4caf50";
     } catch (error) {
@@ -82,6 +102,38 @@ generateBtn.addEventListener("click", async () => {
         statusIndicator.style.color = "#f44336";
         alert("Terjadi kesalahan saat memanggil Gemini API. Periksa kembali API Key Anda.");
     } finally {
-        generateBtn.disabled = false;
+        setBusy(false);
     }
+}
+
+// Tombol Lanjutkan Cerita (Generate)
+generateBtn.addEventListener("click", () => {
+    generateStory(storyBox.value);
+});
+
+// Tombol Ulangi (Retry): buang hasil generate terakhir, lalu generate ulang
+retryBtn.addEventListener("click", () => {
+    if (lastBaseText === null) {
+        alert("Belum ada generate sebelumnya yang bisa diulang.");
+        return;
+    }
+    storyBox.value = lastBaseText;
+    generateStory(lastBaseText);
+});
+
+// Tombol Cerita Baru (Reset)
+newStoryBtn.addEventListener("click", () => {
+    if (!confirm("Yakin ingin memulai cerita baru? Semua teks di editor akan dihapus.")) {
+        return;
+    }
+
+    storyBox.value = "";
+    storyTitleInput.value = "Cerita Fiksi Baru";
+    lastBaseText = null;
+
+    // Hapus baris di bawah ini jika ingin memori/lore ikut dikosongkan saat reset:
+    // storyMemoryInput.value = "";
+
+    statusIndicator.textContent = "Siap";
+    statusIndicator.style.color = "#4caf50";
 });
