@@ -18,12 +18,10 @@
                 <input type="password" id="apiKey" placeholder="Masukkan API Key Anda...">
                 <button id="saveKeyBtn" class="btn-secondary">Simpan Key</button>
             </div>
-
             <div class="form-group">
                 <label for="systemInstruction">Peran AI (System Instruction):</label>
                 <textarea id="systemInstruction" rows="4">Kamu adalah seorang penulis novel fiksi profesional. Tulis narasi dalam bahasa Indonesia yang kaya deskripsi, imersif, dan sesuai dengan alur cerita.</textarea>
             </div>
-
             <div class="form-group">
                 <label for="storyMemory">Memori / Latar Cerita (Lore/Memory):</label>
                 <textarea id="storyMemory" rows="5" placeholder="Contoh: Tokoh utama bernama Gazali, latar di Hulu Sungai..."></textarea>
@@ -36,14 +34,13 @@
                 <input type="text" id="storyTitle" placeholder="Judul Cerita Anda..." value="Cerita Fiksi Baru">
                 <span id="statusIndicator" class="status-ready">Siap</span>
             </header>
-
             <div class="editor-content">
                 <textarea id="storyBox" placeholder="Mulai ketik paragraf pertama cerita Anda di sini, lalu klik 'Lanjutkan Cerita'..."></textarea>
             </div>
-
             <footer class="editor-footer">
                 <button id="generateBtn" class="btn-primary">Lanjutkan Cerita (Generate) ➤</button>
                 <button id="retryBtn" class="btn-secondary">Ulangi (Retry)</button>
+                <button id="newStoryBtn" class="btn-secondary" style="background-color: #d32f2f; color: white;">Cerita Baru (Reset)</button>
             </footer>
         </main>
     </div>
