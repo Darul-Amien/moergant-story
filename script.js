@@ -15,13 +15,57 @@ const statusIndicator = document.getElementById("statusIndicator");
 // Menyimpan teks cerita sebelum generate terakhir (dipakai oleh tombol Retry)
 let lastBaseText = null;
 
-// Load API Key dari localStorage jika ada
-window.addEventListener("DOMContentLoaded", () => {
-    const savedKey = localStorage.getItem("gemini_api_key");
-    if (savedKey) {
-        apiKeyInput.value = savedKey;
+// ===== Simpan & pulihkan data otomatis =====
+const STORAGE_KEY = "cerita_ai_data";
+
+function saveAll() {
+    try {
+        const data = {
+            title: storyTitleInput.value,
+            story: storyBox.value,
+            system: systemInstructionInput.value,
+            memory: storyMemoryInput.value,
+            lastBaseText: lastBaseText
+        };
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+    } catch (e) {
+        console.error("Gagal menyimpan data:", e);
     }
+}
+
+function loadAll() {
+    try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if (!raw) return;
+        const data = JSON.parse(raw);
+        if (data.title !== undefined) storyTitleInput.value = data.title;
+        if (data.story !== undefined) storyBox.value = data.story;
+        if (data.system !== undefined) systemInstructionInput.value = data.system;
+        if (data.memory !== undefined) storyMemoryInput.value = data.memory;
+        if (data.lastBaseText !== undefined) lastBaseText = data.lastBaseText;
+    } catch (e) {
+        console.error("Gagal memuat data:", e);
+    }
+}
+
+// Simpan setiap kali ada perubahan ketikan
+[storyTitleInput, storyBox, systemInstructionInput, storyMemoryInput].forEach(el => {
+    el.addEventListener("input", saveAll);
 });
+
+// Simpan juga saat tab disembunyikan / ditutup (penting di HP)
+document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "hidden") saveAll();
+});
+window.addEventListener("pagehide", saveAll);
+
+// Load data saat halaman dibuka
+// (script type="module" sudah dijalankan setelah DOM siap, jadi bisa langsung dipanggil)
+const savedKey = localStorage.getItem("gemini_api_key");
+if (savedKey) {
+    apiKeyInput.value = savedKey;
+}
+loadAll();
 
 // Simpan API Key ke localStorage
 saveKeyBtn.addEventListener("click", () => {
@@ -94,10 +138,15 @@ async function generateStory(baseText) {
         // Scroll otomatis ke bagian paling bawah
         storyBox.scrollTop = storyBox.scrollHeight;
 
+        // Simpan hasil dari AI
+        saveAll();
+
         statusIndicator.textContent = "Siap";
         statusIndicator.style.color = "#4caf50";
     } catch (error) {
         console.error(error);
+        // Simpan lastBaseText meski gagal, supaya Retry tetap bisa dipakai setelah refresh
+        saveAll();
         statusIndicator.textContent = "Error!";
         statusIndicator.style.color = "#f44336";
         alert("Terjadi kesalahan saat memanggil Gemini API. Periksa kembali API Key Anda.");
@@ -133,6 +182,8 @@ newStoryBtn.addEventListener("click", () => {
 
     // Hapus baris di bawah ini jika ingin memori/lore ikut dikosongkan saat reset:
     // storyMemoryInput.value = "";
+
+    saveAll();
 
     statusIndicator.textContent = "Siap";
     statusIndicator.style.color = "#4caf50";
