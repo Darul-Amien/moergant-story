@@ -1,5 +1,8 @@
 import { GoogleGenAI } from "https://esm.run/@google/genai";
 
+// Nama model Gemini (ganti di sini saja jika Google mengubah nama model lagi)
+const MODEL_NAME = "gemini-3.8-flash";
+
 // Ambil elemen dari DOM
 const apiKeyInput = document.getElementById("apiKey");
 const saveKeyBtn = document.getElementById("saveKeyBtn");
@@ -123,7 +126,7 @@ async function generateStory(baseText) {
         fullPrompt += `[Teks Cerita Saat Ini]:\n${baseText}\n\n[Instruksi]: Lanjutkan paragraf cerita di atas secara natural, imersif, dan nyambung.`;
 
         const response = await ai.models.generateContent({
-            model: "gemini-3.8-flash",
+            model: MODEL_NAME,
             contents: fullPrompt,
             config: {
                 systemInstruction: systemInstruction,
@@ -163,7 +166,7 @@ async function generateStory(baseText) {
         } else if (/\b403\b|PERMISSION_DENIED|referrer/i.test(detail)) {
             petunjuk = "Akses ditolak. Cek pembatasan domain pada API Key atau apakah Gemini API aktif.";
         } else if (/\b404\b|not found/i.test(detail)) {
-            petunjuk = "Model tidak ditemukan. Coba ganti nama model di script.js.";
+            petunjuk = "Model tidak ditemukan. Ganti nilai MODEL_NAME di bagian atas script.js.";
         } else if (/\b429\b|RESOURCE_EXHAUSTED|quota/i.test(detail)) {
             petunjuk = "Kuota atau batas permintaan habis. Tunggu sebentar lalu coba lagi.";
         } else if (/\b503\b|overloaded|UNAVAILABLE/i.test(detail)) {
