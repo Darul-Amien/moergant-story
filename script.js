@@ -123,7 +123,7 @@ async function generateStory(baseText) {
         fullPrompt += `[Teks Cerita Saat Ini]:\n${baseText}\n\n[Instruksi]: Lanjutkan paragraf cerita di atas secara natural, imersif, dan nyambung.`;
 
         const response = await ai.models.generateContent({
-            model: "gemini-2.5-flash",
+            model: "gemini-3.8-flash",
             contents: fullPrompt,
             config: {
                 systemInstruction: systemInstruction,
