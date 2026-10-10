@@ -131,8 +131,13 @@ async function generateStory(baseText) {
             }
         });
 
-        // Tambahkan hasil generasi ke dalam kotak teks (dengan baris baru yang rapi)
+        // Pastikan balasan tidak kosong (bisa kosong jika diblokir filter keamanan)
         const generatedText = response.text;
+        if (!generatedText) {
+            throw new Error("Balasan kosong. Kemungkinan diblokir filter keamanan Gemini. Coba ubah alur cerita atau ulangi.");
+        }
+
+        // Tambahkan hasil generasi ke dalam kotak teks (dengan baris baru yang rapi)
         storyBox.value = baseText + (baseText.endsWith("\n") ? "" : "\n") + generatedText;
 
         // Scroll otomatis ke bagian paling bawah
@@ -149,7 +154,25 @@ async function generateStory(baseText) {
         saveAll();
         statusIndicator.textContent = "Error!";
         statusIndicator.style.color = "#f44336";
-        alert("Terjadi kesalahan saat memanggil Gemini API. Periksa kembali API Key Anda.");
+
+        const detail = (error && error.message) ? error.message : String(error);
+        let petunjuk = "";
+
+        if (/API key not valid|API_KEY_INVALID|\b400\b/i.test(detail)) {
+            petunjuk = "API Key tidak valid. Cek lagi key-nya dan pastikan tidak ada spasi.";
+        } else if (/\b403\b|PERMISSION_DENIED|referrer/i.test(detail)) {
+            petunjuk = "Akses ditolak. Cek pembatasan domain pada API Key atau apakah Gemini API aktif.";
+        } else if (/\b404\b|not found/i.test(detail)) {
+            petunjuk = "Model tidak ditemukan. Coba ganti nama model di script.js.";
+        } else if (/\b429\b|RESOURCE_EXHAUSTED|quota/i.test(detail)) {
+            petunjuk = "Kuota atau batas permintaan habis. Tunggu sebentar lalu coba lagi.";
+        } else if (/\b503\b|overloaded|UNAVAILABLE/i.test(detail)) {
+            petunjuk = "Server Gemini sedang sibuk. Coba lagi beberapa saat.";
+        } else if (/Failed to fetch|NetworkError/i.test(detail)) {
+            petunjuk = "Koneksi internet bermasalah atau permintaan diblokir.";
+        }
+
+        alert("Terjadi kesalahan saat memanggil Gemini API.\n\n" + (petunjuk ? petunjuk + "\n\n" : "") + "Detail: " + detail);
     } finally {
         setBusy(false);
     }
